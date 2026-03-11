@@ -3,7 +3,7 @@ import random
 
 data = range(1,40) 
 lottery_count = 5 
-exclude_numbers = [32, 2, 3, 35, 38, 12, 14, 17, 19, 20, 21, 27, 30,1, 11, 18, 25, 28,4, 7, 26, 36, 39,4, 11, 23, 31, 37, 15, 26, 33, 39]  #要排除的數字列表
+exclude_numbers = [32, 38, 7, 11, 12, 14, 15, 17, 30,1, 22, 25, 26, 33,2, 4, 16, 19, 26,2, 3, 8, 10, 18,4, 6, 23, 27, 34]  #要排除的數字列表
 data = [num for num in data if num not in exclude_numbers]      # 排除指定數字後的列表
 print(f"排除後的資料: {data}")
 print(f"資料總數: {len(data)}")
