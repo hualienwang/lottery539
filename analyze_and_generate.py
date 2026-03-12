@@ -82,13 +82,14 @@ print(f"\n熱門號碼 (>= 2): {sorted(hot_numbers)}")
 print(f"冷門號碼 (== 1): {sorted(cold_numbers)}")
 
 # 用戶指定的號碼
-user_numbers = [5, 9, 13, 20, 21, 24, 28, 29, 31, 35, 36, 37, 39]
+user_numbers = [2, 7, 8, 9, 10, 13, 16, 21, 22, 23, 25, 27, 29, 31, 34, 35, 36, 39]
 
 # 區分用戶指定號碼中的熱門牌與冷門牌
 user_hot = []
 user_cold = []
 
 print(f"\n=== 用戶指定號碼分析 ===")
+print(f"指定號碼數: {len(user_numbers)}")
 print(f"用戶號碼: {user_numbers}")
 
 for num in user_numbers:
