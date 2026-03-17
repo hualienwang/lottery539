@@ -526,7 +526,7 @@ def main():
         print(f"   儲存位置: {gen.data_file}")
     
     # 分析與產生號碼
-    analysis = gen.analyze(top_n=30, recent_draws=20)
+    analysis = gen.analyze(top_n=30, recent_draws=25)
     
     print(f"\n{'='*70}")
     print("📊 統計分析結果")
@@ -560,8 +560,8 @@ def main():
     print(f"策略: 排除最近20期未開過的{len(exclude_nums)}個號碼{exclude_nums}")
     # exclude_nums 加上前2期或3期的號碼（視情況調整）
 
-    recent_exclude_nums = gen._recent_exclude(recent_n=2)
-    print(f"排除最近2期開出的號碼: {recent_exclude_nums}")
+    recent_exclude_nums = gen._recent_exclude(recent_n=4)
+    print(f"排除最近4期開出的號碼: {recent_exclude_nums}")
 
     exclude_nums.extend(recent_exclude_nums)  # 加入最近期數的號碼到排除列表
     exclude_nums = list(set(exclude_nums))  # 去重

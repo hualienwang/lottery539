@@ -1,9 +1,15 @@
+# -*- coding: utf-8 -*-
 from itertools import combinations
 import random
+import sys
+import io
+
+# 設定輸出編碼為 UTF-8
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 data = range(1,40) 
 lottery_count = 5 
-exclude_numbers = [2, 25, 27, 29, 39,2, 8, 9, 21, 31,4, 6, 18, 19, 20,1, 3, 19, 24, 28,32, 33, 37, 5, 38, 11, 12, 14, 15, 17, 26, 30]  #要排除的數字列表
+exclude_numbers = [2, 35, 4, 5, 34, 7, 8, 10, 11, 12, 15, 17, 18, 19, 20, 21, 23, 29]  #要排除的數字列表
 data = [num for num in data if num not in exclude_numbers]      # 排除指定數字後的列表
 print(f"排除後的資料: {data}")
 print(f"資料總數: {len(data)}")

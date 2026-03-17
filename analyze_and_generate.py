@@ -14,33 +14,33 @@ with open('lotto539_data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 draws = data['draws']
-
+print(f"總開獎期數: {len(draws)}期")
 # 篩選2026年2月2日到2026年3月10日的資料（標準化日期格式）
-def normalize_date(date_str):
-    """標準化日期格式為 YYYY-MM-DD"""
-    parts = date_str.split('-')
-    if len(parts) == 3:
-        return f"{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
-    return date_str
+# def normalize_date(date_str):
+#     """標準化日期格式為 YYYY-MM-DD"""
+#     parts = date_str.split('-')
+#     if len(parts) == 3:
+#         return f"{int(parts[0]):04d}-{int(parts[1]):02d}-{int(parts[2]):02d}"
+#     return date_str
 
-start_date = "2026-02-02"
-end_date = "2026-03-10"
+# start_date = "2026-02-02"
+# end_date = "2026-03-10"
 
-filtered_draws = []
-for d in draws:
-    norm_date = normalize_date(d['date'])
-    if start_date <= norm_date <= end_date:
-        filtered_draws.append({
-            'date': norm_date,  # 使用標準化後的日期
-            'numbers': d['numbers'],
-            'added_time': d.get('added_time', '')
-        })
-
-print(f"總開獎期數: {len(filtered_draws)}期")
+# filtered_draws = []
+# for d in draws:
+#     norm_date = normalize_date(d['date'])
+#     if start_date <= norm_date <= end_date:
+#         filtered_draws.append({
+#             'date': norm_date,  # 使用標準化後的日期
+#             'numbers': d['numbers'],
+#             'added_time': d.get('added_time', '')
+#         })
+# print(filtered_draws)
+# print(f"總開獎期數: {len(filtered_draws)}期")
 # print(f"篩選後的日期範圍: {filtered_draws[0]['date']} ~ {filtered_draws[-1]['date']}")
 
 # 取前20期進行分析
-analysis_draws = filtered_draws[-20:]
+analysis_draws = draws[-20:]
 print(f"\n分析前20期: {analysis_draws[-20]['date']} ~ {analysis_draws[-1]['date']}")
 
 # 統計每個號碼出現次數
@@ -82,7 +82,7 @@ print(f"\n熱門號碼 (>= 2): {sorted(hot_numbers)}")
 print(f"冷門號碼 (== 1): {sorted(cold_numbers)}")
 
 # 用戶指定的號碼
-user_numbers = [2, 7, 8, 9, 10, 13, 16, 21, 22, 23, 25, 27, 29, 31, 34, 35, 36, 39]
+user_numbers = [1, 3, 6, 9, 13, 14, 16, 22, 24, 25, 26, 27, 28, 31, 32, 33, 36, 37, 38, 39]
 
 # 區分用戶指定號碼中的熱門牌與冷門牌
 user_hot = []
