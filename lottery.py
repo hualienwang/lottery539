@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
 from itertools import combinations
+from collections import Counter
 import random
 import sys
 import io
+from lotto_data import load_draws_from_db
 
 # 設定輸出編碼為 UTF-8
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 data = range(1,40) 
 lottery_count = 5 
-exclude_numbers = [2, 35, 4, 5, 34, 7, 8, 10, 11, 12, 15, 17, 18, 19, 20, 21, 23, 29]  #要排除的數字列表
+qty = 2  #要預測抽出的組數
+recent_draws = load_draws_from_db("lotto.db", limit=30)
+counter = Counter(num for draw in recent_draws for num in draw["numbers"])
+exclude_numbers = [num for num in range(1, 40) if counter.get(num, 0) <= 2]  # 最近30期出現次數<2的號碼
 data = [num for num in data if num not in exclude_numbers]      # 排除指定數字後的列表
+print(f"最近30期出現次數<=2的排除號碼: {exclude_numbers}")
 print(f"排除後的資料: {data}")
 print(f"資料總數: {len(data)}")
 
 combos = list(combinations(data, lottery_count))  # 產生所有可能的組合
 print(f"總組數: {len(combos)}")
+if len(combos) < qty:
+    raise ValueError(f"可抽組合數不足：需要 {qty} 組，但只有 {len(combos)} 組")
 
 hot_numbers = []  #熱門號碼列表
-qty = 2  #要預測抽出的組數
 if len(hot_numbers) > 0 and all(hot in data for hot in hot_numbers):
 
     print(f"熱門號碼: {hot_numbers}")

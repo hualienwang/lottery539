@@ -10,15 +10,20 @@
 - 自動檢查重複
 
 資料儲存位置:
-    D:\\develop\\lottery539\\lotto539_data.json
+    D:\\develop\\lottery539\\lotto.db
 """
 
 import random
-import json
 import os
 import sys
 from datetime import datetime
 from collections import Counter
+from lotto_data import clear_draws_from_db, load_draws_from_db, save_draw_to_db
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 class Lotto539Generator:
@@ -33,7 +38,7 @@ class Lotto539Generator:
             data_dir: 資料儲存目錄（預設 D:\\develop\\lottery539）
         """
         self.data_dir = data_dir
-        self.data_file = os.path.join(data_dir, 'lotto539_data.json')
+        self.data_file = os.path.join(data_dir, 'lotto.db')
         self.history_draws = []
         
         # 確保目錄存在
@@ -73,7 +78,7 @@ class Lotto539Generator:
                 print(f"⚠️ 無法建立目錄 {self.data_dir}: {e}")
                 # 如果無法建立，使用目前目錄
                 self.data_dir = os.getcwd()
-                self.data_file = os.path.join(self.data_dir, 'lotto539_data.json')
+                self.data_file = os.path.join(self.data_dir, 'lotto.db')
                 print(f"   改用目前目錄: {self.data_dir}")
     
     def _init_default_data(self):
@@ -105,51 +110,37 @@ class Lotto539Generator:
         print(f"✅ 已初始化預設資料（{len(self.history_draws)}期）")
     
     def _load_data(self):
-        """從檔案載入資料"""
-        if os.path.exists(self.data_file):
-            try:
-                with open(self.data_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    self.history_draws = data.get('draws', [])
-                    
-                    # 資料驗證
-                    valid_draws = []
-                    for draw in self.history_draws:
-                        if self._validate_draw(draw):
-                            valid_draws.append(draw)
-                        else:
-                            print(f"⚠️ 跳過無效記錄: {draw}")
-                    
-                    self.history_draws = valid_draws
-                    print(f"📂 已載入歷史資料（{len(self.history_draws)}期）")
-                    print(f"   檔案位置: {self.data_file}")
-            except json.JSONDecodeError as e:
-                print(f"⚠️ 資料檔格式錯誤: {e}")
-                self.history_draws = []
-            except Exception as e:
-                print(f"⚠️ 載入資料失敗: {e}")
-                self.history_draws = []
+        """從 SQLite 資料庫載入資料"""
+        try:
+            self.history_draws = load_draws_from_db(self.data_file)
+            
+            # 資料驗證
+            valid_draws = []
+            for draw in self.history_draws:
+                if self._validate_draw(draw):
+                    valid_draws.append(draw)
+                else:
+                    print(f"⚠️ 跳過無效記錄: {draw}")
+            
+            self.history_draws = valid_draws
+            print(f"📂 已載入歷史資料（{len(self.history_draws)}期）")
+            print(f"   資料庫位置: {self.data_file}")
+        except Exception as e:
+            print(f"⚠️ 載入資料失敗: {e}")
+            self.history_draws = []
     
     def _save_data(self):
-        """儲存資料到檔案"""
+        """儲存記憶體中的資料到 SQLite 資料庫"""
         try:
-            # 備份舊檔案
-            backup_file = self.data_file + '.backup'
-            if os.path.exists(self.data_file):
-                try:
-                    import shutil
-                    shutil.copy2(self.data_file, backup_file)
-                except:
-                    pass  # 備份失敗不影響主程序
-            
-            data = {
-                'draws': self.history_draws,
-                'last_update': datetime.now().isoformat(),
-                'total_count': len(self.history_draws),
-                'version': '4.2'
-            }
-            with open(self.data_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            clear_draws_from_db(self.data_file)
+            for draw in self.history_draws:
+                if not save_draw_to_db(
+                    self.data_file,
+                    draw['numbers'],
+                    date=draw['date'],
+                    period=draw.get('period'),
+                ):
+                    return False
             return True
         except Exception as e:
             print(f"⚠️ 儲存資料失敗: {e}")
@@ -220,13 +211,14 @@ class Lotto539Generator:
         self.history_draws.append(draw_data)
         
         if save:
-            if self._save_data():
+            if save_draw_to_db(self.data_file, numbers_sorted, date=draw_data['date']):
+                self.history_draws = load_draws_from_db(self.data_file)
                 print(f"✅ 已新增並儲存: {numbers_sorted} (共{len(self.history_draws)}期)")
                 print(f"   日期: {draw_data['date']}")
-                print(f"   檔案: {self.data_file}")
+                print(f"   資料庫: {self.data_file}")
                 return True
             else:
-                print(f"⚠️ 已新增但未儲存: {numbers_sorted}")
+                print(f"⚠️ 已新增但未儲存，可能是期別重複: {numbers_sorted}")
                 return False
         
         return True
@@ -263,18 +255,21 @@ class Lotto539Generator:
         else:
             avg_count = max_count = min_count = 0
         
-        # 熱門號碼：出現次數 >= 平均值的號碼
+        hot_threshold = 3
+        cold_threshold = 2
+
+        # 熱門號碼：出現次數 >= 3 的號碼
         recent_exclude_nums = self._recent_exclude(recent_n=2)  # 最近分析期數的號碼列表
         hot = sorted(
-            [num for num, count in counter.items() if count >= avg_count],
+            [num for num, count in counter.items() if count >= hot_threshold],
             key=lambda x: counter[x],
             reverse=True
         )[:top_n]
         hot = [num for num in hot if num not in recent_exclude_nums]  # 排除最近期數的號碼
         
-        # 冷門號碼：出現次數 < 平均值的號碼
+        # 冷門號碼：出現次數 < 2 的號碼
         cold = sorted(
-            [num for num, count in counter.items() if count < avg_count],
+            [num for num in range(1, 40) if counter.get(num, 0) < cold_threshold],
             key=lambda x: counter[x]
         )[:top_n]
         cold = [num for num in cold if num not in recent_exclude_nums]  # 排除最近期數的號碼
@@ -394,9 +389,8 @@ class Lotto539Generator:
         """清除所有資料（慎用）"""
         if confirm:
             self.history_draws = []
-            if os.path.exists(self.data_file):
-                os.remove(self.data_file)
-                print(f"✅ 已刪除資料檔: {self.data_file}")
+            clear_draws_from_db(self.data_file)
+            print(f"✅ 已清除資料庫資料: {self.data_file}")
             print("✅ 所有資料已清除")
             return True
         return False
@@ -526,7 +520,7 @@ def main():
         print(f"   儲存位置: {gen.data_file}")
     
     # 分析與產生號碼
-    analysis = gen.analyze(top_n=30, recent_draws=25)
+    analysis = gen.analyze(top_n=30, recent_draws=30)
     
     print(f"\n{'='*70}")
     print("📊 統計分析結果")

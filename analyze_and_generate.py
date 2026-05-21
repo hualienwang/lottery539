@@ -4,16 +4,16 @@
 分析台彩539號碼機率並產生組合
 """
 
-import json
 import random
 from datetime import datetime
 from collections import Counter
+from lotto_data import load_draws_from_db
+
+HOT_THRESHOLD = 3
+COLD_THRESHOLD = 2
 
 # 讀取資料
-with open('lotto539_data.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
-
-draws = data['draws']
+draws = load_draws_from_db('lotto.db')
 print(f"總開獎期數: {len(draws)}期")
 # 篩選2026年2月2日到2026年3月10日的資料（標準化日期格式）
 # def normalize_date(date_str):
@@ -40,8 +40,8 @@ print(f"總開獎期數: {len(draws)}期")
 # print(f"篩選後的日期範圍: {filtered_draws[0]['date']} ~ {filtered_draws[-1]['date']}")
 
 # 取前20期進行分析
-analysis_draws = draws[-20:]
-print(f"\n分析前20期: {analysis_draws[-20]['date']} ~ {analysis_draws[-1]['date']}")
+analysis_draws = draws[-30:]
+print(f"\n分析前30期: {analysis_draws[-30]['date']} ~ {analysis_draws[-1]['date']}")
 
 # 統計每個號碼出現次數
 all_nums = []
@@ -60,29 +60,28 @@ print(f"總開出號碼數: {total_numbers}")
 print(f"平均出現次數 (平均值): {avg_frequency:.2f}")
 
 # 橫向顯示所有號碼的出現次數
-print(f"\n號碼出現次數 (熱門>= 2):")
+print(f"\n號碼出現次數 (熱門>= {HOT_THRESHOLD}, 冷門< {COLD_THRESHOLD}):")
 hot_row = []
 cold_row = []
 for num in range(1, 40):
     count = counter.get(num, 0)
-    status = "熱門" if count >= 2 else "冷門"
-    if count >= 2:
+    if count >= HOT_THRESHOLD:
         hot_row.append(f"{num}({count})")
-    else:
+    elif count < COLD_THRESHOLD:
         cold_row.append(f"{num}({count})")
 
 print(f"  熱門: {' '.join(hot_row)}")
 print(f"  冷門: {' '.join(cold_row)}")
 
 #區分熱門牌與冷門牌
-hot_numbers = [num for num in range(1, 40) if counter.get(num, 0) >= 2]
-cold_numbers = [num for num in range(1, 40) if counter.get(num, 0) == 1]
+hot_numbers = [num for num in range(1, 40) if counter.get(num, 0) >= HOT_THRESHOLD]
+cold_numbers = [num for num in range(1, 40) if counter.get(num, 0) < COLD_THRESHOLD]
 
-print(f"\n熱門號碼 (>= 2): {sorted(hot_numbers)}")
-print(f"冷門號碼 (== 1): {sorted(cold_numbers)}")
+print(f"\n熱門號碼 (>= {HOT_THRESHOLD}): {sorted(hot_numbers)}")
+print(f"冷門號碼 (< {COLD_THRESHOLD}): {sorted(cold_numbers)}")
 
 # 用戶指定的號碼
-user_numbers = [1, 3, 6, 9, 13, 14, 16, 22, 24, 25, 26, 27, 28, 31, 32, 33, 36, 37, 38, 39]
+user_numbers = [8,12,15,32,11,19,22,27,34,4,5,21,36,2,13,17,18,20,23,25,35]
 
 # 區分用戶指定號碼中的熱門牌與冷門牌
 user_hot = []
@@ -94,19 +93,21 @@ print(f"用戶號碼: {user_numbers}")
 
 for num in user_numbers:
     count = counter.get(num, 0)
-    if count >= 2:
+    if count >= HOT_THRESHOLD:
         user_hot.append(num)
         print(f"  {num}: {count}次 [熱門]")
-    else:
+    elif count < COLD_THRESHOLD:
         user_cold.append(num)
         print(f"  {num}: {count}次 [冷門]")
+    else:
+        print(f"  {num}: {count}次 [一般]")
 
 print(f"\n用戶熱門牌: {sorted(user_hot)}")
 print(f"用戶冷門牌: {sorted(user_cold)}")
 
 # 使用熱門權重3產生2組牌
 # 策略：從用戶的熱門牌和冷門牌中選擇
-hot_weight = 3
+hot_weight = 2
 
 # 產生組合
 random.seed()  # 固定隨機種子以便重現
